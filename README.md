@@ -6,7 +6,7 @@ A PowerShell tool to retrieve historical capacity usage from a Qumulo cluster vi
 
 - PowerShell 5.1 or later
 - Network access to Qumulo cluster (port 8000)
-- Valid bearer token for authentication
+- Valid bearer token for authentication for a user with the `ANALYTICS_READ` RBAC privilege
 
 ## Usage
 
@@ -72,6 +72,8 @@ Period     CapacityUsed DataUsed MetadataUsed SnapshotUsed TotalUsable PercentUs
 ```
 
 ## Helpful Qumulo Care Articles:
+
+- The only RBAC privilege required by this tool is `ANALYTICS_READ`
 
 [How to get an Access Token](https://docs.qumulo.com/administrator-guide/connecting-to-external-services/creating-using-access-tokens-to-authenticate-external-services-qumulo-core.html) 
 
