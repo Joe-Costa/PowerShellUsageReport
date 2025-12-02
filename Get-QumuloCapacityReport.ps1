@@ -182,21 +182,27 @@ function Group-ByPeriod {
 }
 
 # Ignore SSL certificate errors (for self-signed certs)
-if (-not ([System.Management.Automation.PSTypeName]'TrustAllCertsPolicy').Type) {
-    Add-Type @"
-        using System.Net;
-        using System.Security.Cryptography.X509Certificates;
-        public class TrustAllCertsPolicy : ICertificatePolicy {
-            public bool CheckValidationResult(
-                ServicePoint srvPoint, X509Certificate certificate,
-                WebRequest request, int certificateProblem) {
-                return true;
+# PowerShell 7+ uses -SkipCertificateCheck on Invoke-RestMethod
+# PowerShell 5.x requires the ServicePointManager approach
+$isPowerShell7 = $PSVersionTable.PSVersion.Major -ge 7
+
+if (-not $isPowerShell7) {
+    if (-not ([System.Management.Automation.PSTypeName]'TrustAllCertsPolicy').Type) {
+        Add-Type @"
+            using System.Net;
+            using System.Security.Cryptography.X509Certificates;
+            public class TrustAllCertsPolicy : ICertificatePolicy {
+                public bool CheckValidationResult(
+                    ServicePoint srvPoint, X509Certificate certificate,
+                    WebRequest request, int certificateProblem) {
+                    return true;
+                }
             }
-        }
 "@
+    }
+    [System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
 }
-[System.Net.ServicePointManager]::CertificatePolicy = New-Object TrustAllCertsPolicy
-[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
 
 # Convert dates to epoch
 $beginEpoch = ConvertTo-UnixEpoch -Date $StartDate
@@ -220,7 +226,15 @@ $headers = @{
 }
 
 try {
-    $response = Invoke-RestMethod -Uri $url -Headers $headers -Method Get
+    $restParams = @{
+        Uri     = $url
+        Headers = $headers
+        Method  = 'Get'
+    }
+    if ($isPowerShell7) {
+        $restParams['SkipCertificateCheck'] = $true
+    }
+    $response = Invoke-RestMethod @restParams
 
     if ($response.Count -eq 0) {
         Write-Host "No capacity data available for the specified date range." -ForegroundColor Yellow
