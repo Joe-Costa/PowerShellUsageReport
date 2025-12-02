@@ -40,6 +40,8 @@ or
 
 *Either `-Token` or `-TokenFile` must be specified.
 
+The `-Hourly`, `-Daily`, `-Weekly`or `-Monthly` flags are mutually exclusive.
+
 ### Examples
 
 ```powershell
